@@ -6,8 +6,7 @@
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "types": ["node"]
+    "skipLibCheck": true
   },
   "include": ["src/**/*", "src/listen.ts", "src/api.ts"],
   "exclude": ["node_modules", "dist", "__tests__"]
