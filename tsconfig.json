@@ -6,7 +6,9 @@
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "typeRoots": ["./node_modules/@types"]
   },
   "include": ["src/**/*", "src/listen.ts", "src/api.ts"],
   "exclude": ["node_modules", "dist", "__tests__"]
