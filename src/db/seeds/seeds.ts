@@ -74,6 +74,33 @@ const seed = async (dataBase: DataBase): Promise<void> => {
         `);
     // Creating Events Tables
     if (process.env.NODE_ENV === "production") {
+      // Check if start_date column exists
+      const columnResult = await db.query(`
+        SELECT column_name FROM information_schema.columns
+        WHERE table_name = 'events' AND column_name = 'start_date'
+      `);
+      if (columnResult.rows.length === 0) {
+        // Check if 'date' column exists (old schema)
+        const dateColumnResult = await db.query(`
+          SELECT column_name FROM information_schema.columns
+          WHERE table_name = 'events' AND column_name = 'date'
+        `);
+        if (dateColumnResult.rows.length > 0) {
+          // Rename 'date' to 'start_date'
+          await db.query(`ALTER TABLE events RENAME COLUMN date TO start_date`);
+          // Add end_date column
+          await db.query(`ALTER TABLE events ADD COLUMN end_date TIMESTAMP`);
+          // Set end_date to start_date for existing rows
+          await db.query(
+            `UPDATE events SET end_date = start_date WHERE end_date IS NULL`
+          );
+        } else {
+          // No date or start_date, drop and recreate
+          await db.query(`DROP TABLE IF EXISTS events CASCADE`);
+        }
+      }
+      // If start_date exists, assume schema is correct, do nothing
+    } else {
       await db.query(`DROP TABLE IF EXISTS events CASCADE`);
     }
     await db.query(`
@@ -137,6 +164,13 @@ const seed = async (dataBase: DataBase): Promise<void> => {
     }
 
     // Insert Data in Tables
+    // Check if data already exists (for production)
+    const userCountResult = await db.query(`SELECT COUNT(*) FROM users`);
+    const userCount = parseInt(userCountResult.rows[0].count);
+    if (userCount > 0) {
+      console.log("Data already exists, skipping seed inserts.");
+      return;
+    }
 
     //User Table
     const hashedUsers = await Promise.all(

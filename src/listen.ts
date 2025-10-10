@@ -10,19 +10,11 @@ const PORT: number = process.env.PORT ? parseInt(process.env.PORT, 10) : 9090;
 
 (async () => {
   try {
-    // Check if events table exists
-    const result = await db.query(
-      "SELECT table_name FROM information_schema.tables WHERE table_name = 'events'"
-    );
-    if (result.rows.length === 0) {
-      console.log("Tables not found, seeding database...");
-      await seed(data);
-      console.log("Database seeded successfully.");
-    } else {
-      console.log("Tables already exist, skipping seed.");
-    }
+    console.log("Running database seed/migration...");
+    await seed(data);
+    console.log("Database ready.");
   } catch (err) {
-    console.error("Error checking or seeding database:", err);
+    console.error("Error seeding/migrating database:", err);
   }
 
   app.listen(PORT, () => {
