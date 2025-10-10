@@ -29,35 +29,35 @@ const seed = async (dataBase) => {
         created_at TIMESTAMP DEFAULT NOW());
         `);
         // Creating Events Tables
-        if (process.env.NODE_ENV === "production") {
-            // Check if start_date column exists
-            const columnResult = await connection_1.default.query(`
+        // Always check and migrate events table if needed
+        const columnResult = await connection_1.default.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'events' AND column_name = 'start_date'
+    `);
+        if (columnResult.rows.length === 0) {
+            // Check if 'date' column exists (old schema)
+            const dateColumnResult = await connection_1.default.query(`
         SELECT column_name FROM information_schema.columns
-        WHERE table_name = 'events' AND column_name = 'start_date'
+        WHERE table_name = 'events' AND column_name = 'date'
       `);
-            if (columnResult.rows.length === 0) {
-                // Check if 'date' column exists (old schema)
-                const dateColumnResult = await connection_1.default.query(`
-          SELECT column_name FROM information_schema.columns
-          WHERE table_name = 'events' AND column_name = 'date'
-        `);
-                if (dateColumnResult.rows.length > 0) {
-                    // Rename 'date' to 'start_date'
-                    await connection_1.default.query(`ALTER TABLE events RENAME COLUMN date TO start_date`);
-                    // Add end_date column
-                    await connection_1.default.query(`ALTER TABLE events ADD COLUMN end_date TIMESTAMP`);
-                    // Set end_date to start_date for existing rows
-                    await connection_1.default.query(`UPDATE events SET end_date = start_date WHERE end_date IS NULL`);
-                }
-                else {
-                    // No date or start_date, drop and recreate
-                    await connection_1.default.query(`DROP TABLE IF EXISTS events CASCADE`);
-                }
+            if (dateColumnResult.rows.length > 0) {
+                // Rename 'date' to 'start_date'
+                await connection_1.default.query(`ALTER TABLE events RENAME COLUMN date TO start_date`);
+                // Add end_date column
+                await connection_1.default.query(`ALTER TABLE events ADD COLUMN end_date TIMESTAMP`);
+                // Set end_date to start_date for existing rows
+                await connection_1.default.query(`UPDATE events SET end_date = start_date WHERE end_date IS NULL`);
             }
-            // If start_date exists, assume schema is correct, do nothing
+            else if (process.env.NODE_ENV !== "production") {
+                // No date or start_date, drop and recreate (only in non-production)
+                await connection_1.default.query(`DROP TABLE IF EXISTS events CASCADE`);
+            }
+            // In production, if no date and no start_date, assume table doesn't exist or is wrong, but don't drop
         }
         else {
-            await connection_1.default.query(`DROP TABLE IF EXISTS events CASCADE`);
+            if (process.env.NODE_ENV !== "production") {
+                await connection_1.default.query(`DROP TABLE IF EXISTS events CASCADE`);
+            }
         }
         await connection_1.default.query(`
         CREATE TABLE IF NOT EXISTS events (

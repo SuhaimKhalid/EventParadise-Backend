@@ -73,35 +73,35 @@ const seed = async (dataBase: DataBase): Promise<void> => {
         created_at TIMESTAMP DEFAULT NOW());
         `);
     // Creating Events Tables
-    if (process.env.NODE_ENV === "production") {
-      // Check if start_date column exists
-      const columnResult = await db.query(`
+    // Always check and migrate events table if needed
+    const columnResult = await db.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'events' AND column_name = 'start_date'
+    `);
+    if (columnResult.rows.length === 0) {
+      // Check if 'date' column exists (old schema)
+      const dateColumnResult = await db.query(`
         SELECT column_name FROM information_schema.columns
-        WHERE table_name = 'events' AND column_name = 'start_date'
+        WHERE table_name = 'events' AND column_name = 'date'
       `);
-      if (columnResult.rows.length === 0) {
-        // Check if 'date' column exists (old schema)
-        const dateColumnResult = await db.query(`
-          SELECT column_name FROM information_schema.columns
-          WHERE table_name = 'events' AND column_name = 'date'
-        `);
-        if (dateColumnResult.rows.length > 0) {
-          // Rename 'date' to 'start_date'
-          await db.query(`ALTER TABLE events RENAME COLUMN date TO start_date`);
-          // Add end_date column
-          await db.query(`ALTER TABLE events ADD COLUMN end_date TIMESTAMP`);
-          // Set end_date to start_date for existing rows
-          await db.query(
-            `UPDATE events SET end_date = start_date WHERE end_date IS NULL`
-          );
-        } else {
-          // No date or start_date, drop and recreate
-          await db.query(`DROP TABLE IF EXISTS events CASCADE`);
-        }
+      if (dateColumnResult.rows.length > 0) {
+        // Rename 'date' to 'start_date'
+        await db.query(`ALTER TABLE events RENAME COLUMN date TO start_date`);
+        // Add end_date column
+        await db.query(`ALTER TABLE events ADD COLUMN end_date TIMESTAMP`);
+        // Set end_date to start_date for existing rows
+        await db.query(
+          `UPDATE events SET end_date = start_date WHERE end_date IS NULL`
+        );
+      } else if (process.env.NODE_ENV !== "production") {
+        // No date or start_date, drop and recreate (only in non-production)
+        await db.query(`DROP TABLE IF EXISTS events CASCADE`);
       }
-      // If start_date exists, assume schema is correct, do nothing
+      // In production, if no date and no start_date, assume table doesn't exist or is wrong, but don't drop
     } else {
-      await db.query(`DROP TABLE IF EXISTS events CASCADE`);
+      if (process.env.NODE_ENV !== "production") {
+        await db.query(`DROP TABLE IF EXISTS events CASCADE`);
+      }
     }
     await db.query(`
         CREATE TABLE IF NOT EXISTS events (
