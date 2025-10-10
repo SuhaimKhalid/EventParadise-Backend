@@ -14,7 +14,8 @@ interface user {
 interface event {
   title: string;
   description: string;
-  date: Date;
+  start_date: Date;
+  end_date: Date;
   location: string;
   type: "free" | "paid";
   price: number;
@@ -75,7 +76,8 @@ const seed = async (dataBase: DataBase): Promise<void> => {
         event_id SERIAL PRIMARY KEY,
         title TEXT NOT NULL,
         description TEXT NOT NULL,
-        date TIMESTAMP NOT NULL,
+        start_date TIMESTAMP NOT NULL,
+        end_date TIMESTAMP NOT NULL,
         location TEXT NOT NULL,
         type TEXT CHECK (type in ('free','paid')),
         price NUMERIC DEFAULT 0,
@@ -162,7 +164,8 @@ const seed = async (dataBase: DataBase): Promise<void> => {
       return [
         data.title,
         data.description,
-        data.date,
+        data.start_date,
+        data.end_date,
         data.location,
         data.type,
         data.price,
@@ -174,7 +177,7 @@ const seed = async (dataBase: DataBase): Promise<void> => {
 
     const eventInsertQuery = format(
       `
-            INSERT INTO events (title,description,date,location,type,price,creator_id,image_url,created_at) VALUES %L RETURNING *;`,
+            INSERT INTO events (title,description,start_date,end_date,location,type,price,creator_id,image_url,created_at) VALUES %L RETURNING *;`,
       eventValues
     );
     const { rows: InsertedEvents } = await db.query(eventInsertQuery);

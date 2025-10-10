@@ -1,5 +1,5 @@
 import request from "supertest";
-import app from "../api";
+import app from "../src/api";
 import db from "../src/db/connection";
 import data from "../src/db/Development-Data/development_Data";
 import seed from "../src/db/seeds/seeds";
@@ -43,10 +43,6 @@ describe("Delete Event", () => {
     token = loginResponse.body.token;
   });
 
-  afterAll(async () => {
-    await db.end();
-  });
-
   test("delete /api/events/:event_id", async () => {
     const result = await request(app)
       .delete("/api/events/1")
@@ -55,4 +51,26 @@ describe("Delete Event", () => {
     const event = result.body;
     expect(event).toEqual({});
   });
+});
+
+describe("Event Dates", () => {
+  beforeAll(async () => {
+    await seed(data);
+  });
+
+  test("GET /api/events includes start_date and end_date", async () => {
+    const result = await request(app).get("/api/events").expect(200);
+    const events = result.body.events;
+    expect(events).toHaveLength(2);
+    events.forEach((event: any) => {
+      expect(event).toHaveProperty("start_date");
+      expect(event).toHaveProperty("end_date");
+      expect(typeof event.start_date).toBe("string");
+      expect(typeof event.end_date).toBe("string");
+    });
+  });
+});
+
+afterAll(async () => {
+  await db.end();
 });

@@ -3,7 +3,7 @@ import { Event } from "../db/tableTypes";
 
 export const selectAllEvents = async (): Promise<Event[]> => {
   const result =
-    await db.query<Event>(`SELECT event_id, title, description, date, location, type,
+    await db.query<Event>(`SELECT event_id, title, description, start_date, end_date, location, type,
             price::INT AS price, creator_id, image_url, created_at
      FROM events`);
   return result.rows;
@@ -11,7 +11,7 @@ export const selectAllEvents = async (): Promise<Event[]> => {
 
 export const selectSingleEvent = async (event_id: Number): Promise<Event> => {
   const result = await db.query<Event>(
-    `SELECT event_id, title, description, date, location, type,
+    `SELECT event_id, title, description, start_date, end_date, location, type,
             price::INT AS price, creator_id, image_url, created_at
      FROM events WHERE event_id=$1`,
     [event_id]
@@ -50,7 +50,8 @@ export const insertEvent = async (
   const {
     title,
     description,
-    date,
+    start_date,
+    end_date,
     location,
     type,
     price,
@@ -59,8 +60,18 @@ export const insertEvent = async (
   } = eventData;
 
   const result = await db.query<Event>(
-    `INSERT INTO events (title,description,date,location,type,price,creator_id,image_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-    [title, description, date, location, type, price, creator_id, image_url]
+    `INSERT INTO events (title,description,start_date,end_date,location,type,price,creator_id,image_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+    [
+      title,
+      description,
+      start_date,
+      end_date,
+      location,
+      type,
+      price,
+      creator_id,
+      image_url,
+    ]
   );
   // Convert numeric strings to numbers
   const event = result.rows[0];
@@ -134,7 +145,7 @@ export const selectEventAttendees = async (event_id: number) => {
 
 export const selectUserEvents = async (user_id: number) => {
   const result = await db.query(
-    `SELECT e.event_id, e.title, e.description, e.date, e.location, e.type, e.price::INT AS price, e.image_url, e.created_at, em.joined_at
+    `SELECT e.event_id, e.title, e.description, e.start_date, e.end_date, e.location, e.type, e.price::INT AS price, e.image_url, e.created_at, em.joined_at
      FROM event_members em
      JOIN events e ON em.event_id = e.event_id
      WHERE em.user_id = $1`,

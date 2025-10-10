@@ -1,0 +1,6 @@
+- [x] Update src/db/tableTypes.ts: Change Event interface date to start_date, add end_date
+- [x] Update src/db/seeds/seeds.ts: Change CREATE TABLE events, update interface, update insert query
+- [x] Update src/models/events-model.ts: Change all 'date' to 'start_date', include end_date in queries
+- [x] Update src/db/Development-Data/development_Data.ts: Change date to start_date, add end_date
+- [x] Update src/db/Test_data/test-data.ts: Change date to start_date, add end_date
+- [x] Update \_\_test/events.test.ts: Add tests for start_date and end_date
