@@ -55,14 +55,16 @@ type mixType = string | number | Date | null;
 const seed = async (dataBase: DataBase): Promise<void> => {
   try {
     // Droping Tables in reverse dependency order (CASCADE will drop sequences)
-    await db.query(`DROP TABLE IF EXISTS emails_log CASCADE`);
-    await db.query(`DROP TABLE IF EXISTS event_members CASCADE`);
-    await db.query(`DROP TABLE IF EXISTS payments CASCADE`);
-    await db.query(`DROP TABLE IF EXISTS events CASCADE`);
-    await db.query(`DROP TABLE IF EXISTS users CASCADE`);
+    if (process.env.NODE_ENV !== "production") {
+      await db.query(`DROP TABLE IF EXISTS emails_log CASCADE`);
+      await db.query(`DROP TABLE IF EXISTS event_members CASCADE`);
+      await db.query(`DROP TABLE IF EXISTS payments CASCADE`);
+      await db.query(`DROP TABLE IF EXISTS events CASCADE`);
+      await db.query(`DROP TABLE IF EXISTS users CASCADE`);
+    }
     // Creating Users Tables
     await db.query(`
-        CREATE TABLE users (
+        CREATE TABLE IF NOT EXISTS users (
         user_id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
         email TEXT UNIQUE NOT NULL,
@@ -72,7 +74,7 @@ const seed = async (dataBase: DataBase): Promise<void> => {
         `);
     // Creating Events Tables
     await db.query(`
-        CREATE TABLE events (
+        CREATE TABLE IF NOT EXISTS events (
         event_id SERIAL PRIMARY KEY,
         title TEXT NOT NULL,
         description TEXT NOT NULL,
@@ -87,7 +89,7 @@ const seed = async (dataBase: DataBase): Promise<void> => {
         );`);
     // Creating Payments Tables
     await db.query(`
-        CREATE TABLE payments (
+        CREATE TABLE IF NOT EXISTS payments (
         payment_id SERIAL PRIMARY KEY,
         user_id  INT REFERENCES users(user_id),
         event_id INT REFERENCES events(event_id),
@@ -97,7 +99,7 @@ const seed = async (dataBase: DataBase): Promise<void> => {
         );`);
     // Creating Event_Members Tables
     await db.query(`
-        CREATE TABLE event_members (
+        CREATE TABLE IF NOT EXISTS event_members (
         event_member_id SERIAL PRIMARY KEY,
         event_id INT REFERENCES events(event_id),
         user_id INT REFERENCES users(user_id),
@@ -105,8 +107,8 @@ const seed = async (dataBase: DataBase): Promise<void> => {
         joined_at TIMESTAMP DEFAULT NOW()
         );`);
     // Creating Emails_log Tables
-    await db.query(`         
-        CREATE TABLE emails_log (
+    await db.query(`
+        CREATE TABLE IF NOT EXISTS emails_log (
         email_id SERIAL PRIMARY KEY,
         user_id INT REFERENCES users(user_id),
         event_id INT REFERENCES events(event_id),
@@ -114,13 +116,15 @@ const seed = async (dataBase: DataBase): Promise<void> => {
         sent_at TIMESTAMP DEFAULT NOW());
         `);
     // Reset sequences
-    await db.query(`ALTER SEQUENCE users_user_id_seq RESTART WITH 1`);
-    await db.query(`ALTER SEQUENCE events_event_id_seq RESTART WITH 1`);
-    await db.query(`ALTER SEQUENCE payments_payment_id_seq RESTART WITH 1`);
-    await db.query(
-      `ALTER SEQUENCE event_members_event_member_id_seq RESTART WITH 1`
-    );
-    await db.query(`ALTER SEQUENCE emails_log_email_id_seq RESTART WITH 1`);
+    if (process.env.NODE_ENV !== "production") {
+      await db.query(`ALTER SEQUENCE users_user_id_seq RESTART WITH 1`);
+      await db.query(`ALTER SEQUENCE events_event_id_seq RESTART WITH 1`);
+      await db.query(`ALTER SEQUENCE payments_payment_id_seq RESTART WITH 1`);
+      await db.query(
+        `ALTER SEQUENCE event_members_event_member_id_seq RESTART WITH 1`
+      );
+      await db.query(`ALTER SEQUENCE emails_log_email_id_seq RESTART WITH 1`);
+    }
 
     // Enable RLS and policies
     const rlsPath = path.join(__dirname, "../rls-policies.sql");
