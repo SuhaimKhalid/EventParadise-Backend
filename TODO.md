@@ -4,3 +4,4 @@
 - [x] Update src/db/Development-Data/development_Data.ts: Change date to start_date, add end_date
 - [x] Update src/db/Test_data/test-data.ts: Change date to start_date, add end_date
 - [x] Update \_\_test/events.test.ts: Add tests for start_date and end_date
+- [x] Update tsconfig.json: Add rootDir "src" and remove __test from include to fix build output
