@@ -73,6 +73,9 @@ const seed = async (dataBase: DataBase): Promise<void> => {
         created_at TIMESTAMP DEFAULT NOW());
         `);
     // Creating Events Tables
+    if (process.env.NODE_ENV === "production") {
+      await db.query(`DROP TABLE IF EXISTS events CASCADE`);
+    }
     await db.query(`
         CREATE TABLE IF NOT EXISTS events (
         event_id SERIAL PRIMARY KEY,
@@ -127,9 +130,11 @@ const seed = async (dataBase: DataBase): Promise<void> => {
     }
 
     // Enable RLS and policies
-    const rlsPath = path.join(__dirname, "../rls-policies.sql");
-    const rlsSQL = fs.readFileSync(rlsPath, "utf8");
-    await db.query(rlsSQL);
+    if (process.env.NODE_ENV !== "production") {
+      const rlsPath = path.join(__dirname, "../rls-policies.sql");
+      const rlsSQL = fs.readFileSync(rlsPath, "utf8");
+      await db.query(rlsSQL);
+    }
 
     // Insert Data in Tables
 
