@@ -5,6 +5,19 @@ import app from "../src/api";
 import data from "../src/db/Development-Data/development_Data";
 import seed from "../src/db/seeds/seeds";
 
+// Mock Stripe to avoid needing real API key in tests
+jest.mock("stripe", () => {
+  return jest.fn().mockImplementation(() => ({
+    checkout: {
+      sessions: {
+        create: jest
+          .fn()
+          .mockResolvedValue({ url: "https://checkout.stripe.com/test" }),
+      },
+    },
+  }));
+});
+
 beforeAll(async () => {
   await seed(data);
 });

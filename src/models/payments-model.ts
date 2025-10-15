@@ -44,3 +44,19 @@ export const insertPayment = async (
   );
   return result.rows[0];
 };
+
+export const updatePaymentStatus = async (
+  payment_id: number,
+  status: string
+): Promise<Payment> => {
+  const result = await db.query<Payment>(
+    `UPDATE payments SET status = $1 WHERE payment_id = $2 RETURNING payment_id, user_id, event_id, amount, status, created_at`,
+    [status, payment_id]
+  );
+  if (result.rows.length === 0) {
+    return Promise.reject({ status: 404, msg: "Payment not found" });
+  }
+  const payment = result.rows[0];
+  payment.amount = Number(payment.amount); // Ensure amount is a number
+  return payment;
+};

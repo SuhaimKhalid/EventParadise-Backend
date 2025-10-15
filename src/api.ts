@@ -27,6 +27,7 @@ import {
   createPayment,
   getPaymentStatus,
   getUserPayments,
+  patchPayment,
 } from "./controllers/payments-Controller";
 import { sendEmail, getEmailStatus } from "./controllers/emails-Controller";
 const app: Application = express();
@@ -68,6 +69,7 @@ app.get("/api/users/:id/events", getUserEvents);
 // Payments EndPoints
 app.post("/api/payments/create", requireAuth, createPayment);
 app.get("/api/payments/:id", getPaymentStatus);
+app.patch("/api/payments/:id", requireAuth, patchPayment);
 app.get("/api/users/:id/payments", getUserPayments);
 
 // Emails EndPoints

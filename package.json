@@ -51,7 +51,8 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.3",
-    "pg-format": "^1.0.4"
+    "pg-format": "^1.0.4",
+    "stripe": "^19.1.0"
   },
   "engines": {
     "node": ">=18.0.0"

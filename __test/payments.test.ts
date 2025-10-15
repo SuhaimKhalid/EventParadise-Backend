@@ -4,6 +4,19 @@ import db from "../src/db/connection";
 import data from "../src/db/Development-Data/development_Data";
 import seed from "../src/db/seeds/seeds";
 
+// Mock Stripe to avoid needing real API key in tests
+jest.mock("stripe", () => {
+  return jest.fn().mockImplementation(() => ({
+    checkout: {
+      sessions: {
+        create: jest
+          .fn()
+          .mockResolvedValue({ url: "https://checkout.stripe.com/test" }),
+      },
+    },
+  }));
+});
+
 describe("Payments Endpoints", () => {
   let token: string;
   beforeAll(async () => {
@@ -53,6 +66,69 @@ describe("Payments Endpoints", () => {
       .get("/api/users/1/payments")
       .expect(200);
     expect(Array.isArray(response.body.payments)).toBe(true);
+  });
+
+  test("PATCH /api/payments/:id - update payment status to success", async () => {
+    // First create a payment
+    const paymentData = {
+      user_id: 1,
+      event_id: 1,
+      amount: 100,
+    };
+    const createResponse = await request(app)
+      .post("/api/payments/create")
+      .set("Authorization", `Bearer ${token}`)
+      .send(paymentData)
+      .expect(201);
+    const paymentId = createResponse.body.payment.payment_id;
+
+    // Now patch it to success
+    const patchResponse = await request(app)
+      .patch(`/api/payments/${paymentId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ status: "success" })
+      .expect(200);
+    expect(patchResponse.body.payment.status).toBe("success");
+  });
+
+  test("PATCH /api/payments/:id - should fail if status is not success", async () => {
+    const response = await request(app)
+      .patch("/api/payments/1")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ status: "failed" })
+      .expect(400);
+    expect(response.body.msg).toBe("Status must be 'success'");
+  });
+
+  test("PATCH /api/payments/:id - should fail if payment not pending", async () => {
+    // First create and update a payment to success
+    const paymentData = {
+      user_id: 1,
+      event_id: 1,
+      amount: 100,
+    };
+    const createResponse = await request(app)
+      .post("/api/payments/create")
+      .set("Authorization", `Bearer ${token}`)
+      .send(paymentData)
+      .expect(201);
+    const paymentId = createResponse.body.payment.payment_id;
+
+    await request(app)
+      .patch(`/api/payments/${paymentId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ status: "success" })
+      .expect(200);
+
+    // Try to patch again
+    const response = await request(app)
+      .patch(`/api/payments/${paymentId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ status: "success" })
+      .expect(400);
+    expect(response.body.msg).toBe(
+      "Payment status can only be updated from 'pending' to 'success'"
+    );
   });
 });
 
