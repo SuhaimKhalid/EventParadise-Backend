@@ -26,15 +26,19 @@ export const createPayment = async (
       return;
     }
 
+    // Convert amount in pounds to pence for Stripe
+    const amountInPence = Math.round(Number(amount) * 100);
+
     const payment = await insertPayment({
       user_id,
       event_id,
-      amount,
+      amount: Number(amount), // store original amount in GBP in DB
       status: "pending",
     });
-    // 2️⃣ Create a Stripe Checkout session
+
+    // Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"], // you can add "google_pay" in newer versions
+      payment_method_types: ["card"], // you can add "google_pay" if supported
       mode: "payment",
       line_items: [
         {
@@ -43,7 +47,7 @@ export const createPayment = async (
             product_data: {
               name: `Event #${event_id} Payment`,
             },
-            unit_amount: amount, // amount in pence
+            unit_amount: amountInPence, // send in pence
           },
           quantity: 1,
         },
@@ -52,7 +56,7 @@ export const createPayment = async (
       cancel_url: `${process.env.CLIENT_URL}/payment-cancel`,
     });
 
-    // 3️⃣ Send back the Checkout URL to the frontend
+    // Send back the Checkout URL to the frontend
     res.status(201).json({ payment, checkout_url: session.url });
   } catch (err) {
     next(err);
@@ -117,11 +121,9 @@ export const patchPayment = async (
 
     const payment = await selectPaymentById(payment_id);
     if (payment.status !== "pending") {
-      res
-        .status(400)
-        .json({
-          msg: "Payment status can only be updated from 'pending' to 'success'",
-        });
+      res.status(400).json({
+        msg: "Payment status can only be updated from 'pending' to 'success'",
+      });
       return;
     }
 
