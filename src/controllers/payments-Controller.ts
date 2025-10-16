@@ -6,6 +6,7 @@ import {
   updatePaymentStatus,
 } from "../models/payments-model";
 import Stripe from "stripe";
+import db from "../db/connection";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: "2025-09-30.clover",
@@ -26,19 +27,32 @@ export const createPayment = async (
       return;
     }
 
-    // Convert amount in pounds to pence for Stripe
+    // 1️⃣ Check if a pending payment already exists
+    const existingPaymentResult = await db.query(
+      `SELECT * FROM payments WHERE user_id=$1 AND event_id=$2 AND status='pending'`,
+      [user_id, event_id]
+    );
+
+    let payment;
+    if (existingPaymentResult.rows.length > 0) {
+      // Use existing pending payment
+      payment = existingPaymentResult.rows[0];
+    } else {
+      // Create new payment
+      payment = await insertPayment({
+        user_id,
+        event_id,
+        amount: Number(amount), // store original GBP
+        status: "pending",
+      });
+    }
+
+    // Convert amount to pence for Stripe
     const amountInPence = Math.round(Number(amount) * 100);
 
-    const payment = await insertPayment({
-      user_id,
-      event_id,
-      amount: Number(amount), // store original amount in GBP in DB
-      status: "pending",
-    });
-
-    // Create Stripe Checkout session
+    // 2️⃣ Create Stripe Checkout session
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"], // you can add "google_pay" if supported
+      payment_method_types: ["card"],
       mode: "payment",
       line_items: [
         {
@@ -47,17 +61,15 @@ export const createPayment = async (
             product_data: {
               name: `Event #${event_id} Payment`,
             },
-            unit_amount: amountInPence, // send in pence
+            unit_amount: amountInPence,
           },
           quantity: 1,
         },
       ],
-
       success_url: `${process.env.CLIENT_URL}/?payment_success=true&payment_id=${payment.payment_id}`,
       cancel_url: `${process.env.CLIENT_URL}/?payment_success=false&payment_id=${payment.payment_id}`,
     });
 
-    // Send back the Checkout URL to the frontend
     res.status(201).json({ payment, checkout_url: session.url });
   } catch (err) {
     next(err);
