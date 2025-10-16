@@ -53,8 +53,8 @@ export const createPayment = async (
         },
       ],
 
-      success_url: `${process.env.CLIENT_URL}/?payment_success=true`,
-      cancel_url: `${process.env.CLIENT_URL}/?payment_success=false`,
+      success_url: `${process.env.CLIENT_URL}/?payment_success=true&payment_id=${payment.payment_id}`,
+      cancel_url: `${process.env.CLIENT_URL}/?payment_success=false&payment_id=${payment.payment_id}`,
     });
 
     // Send back the Checkout URL to the frontend
