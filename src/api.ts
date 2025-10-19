@@ -14,6 +14,7 @@ import {
   deleteEventByID,
   joinEventByID,
   getEventsCreatedByUser,
+  getEventsByTitle,
 } from "./controllers/events-Controller";
 import express, { Application, Request, Response, NextFunction } from "express";
 import { requireStaff, requireAuth } from "./middlewares/auth";
@@ -56,6 +57,7 @@ app.post("/api/auth/login", loginUser);
 
 // Event EndPoints
 app.get("/api/events", getAllEvents);
+app.get("/api/events/search", getEventsByTitle);
 app.get("/api/events/:event_id", getSingleEvent);
 app.patch("/api/events/:event_id", requireStaff, patchEvent);
 app.post("/api/events", requireStaff, addEvent);

@@ -206,6 +206,57 @@ describe("Error Handling", () => {
   });
 });
 
+describe("Search Events by Title", () => {
+  beforeAll(async () => {
+    await seed(data);
+  });
+
+  test("GET /api/events/search with valid title", async () => {
+    const result = await request(app)
+      .get("/api/events/search?title=Music")
+      .expect(200);
+    const events = result.body.events;
+    expect(Array.isArray(events)).toBe(true);
+    events.forEach((event: any) => {
+      expect(event).toHaveProperty("event_id");
+      expect(event).toHaveProperty("title");
+      expect(event.title.toLowerCase()).toContain("music");
+    });
+  });
+
+  test("GET /api/events/search with case insensitive title", async () => {
+    const result = await request(app)
+      .get("/api/events/search?title=festival")
+      .expect(200);
+    const events = result.body.events;
+    expect(Array.isArray(events)).toBe(true);
+    events.forEach((event: any) => {
+      expect(event.title.toLowerCase()).toContain("festival");
+    });
+  });
+
+  test("GET /api/events/search with no matching title", async () => {
+    const result = await request(app)
+      .get("/api/events/search?title=nonexistent")
+      .expect(200);
+    const events = result.body.events;
+    expect(Array.isArray(events)).toBe(true);
+    expect(events.length).toBe(0);
+  });
+
+  test("GET /api/events/search without title query", async () => {
+    const result = await request(app).get("/api/events/search").expect(400);
+    expect(result.body.msg).toBe("Title query parameter is required");
+  });
+
+  test("GET /api/events/search with empty title", async () => {
+    const result = await request(app)
+      .get("/api/events/search?title=")
+      .expect(400);
+    expect(result.body.msg).toBe("Title query parameter is required");
+  });
+});
+
 afterAll(async () => {
   await db.end();
 });

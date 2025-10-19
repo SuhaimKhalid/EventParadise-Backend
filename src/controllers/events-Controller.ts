@@ -7,6 +7,7 @@ import {
   deleteEvent,
   joinEvent,
   selectEventsByCreator,
+  selectEventsByTitle,
 } from "../models/events-model";
 import { Event } from "../db/tableTypes";
 
@@ -156,6 +157,26 @@ export const getEventsCreatedByUser = async (
     }
 
     const result = await selectEventsByCreator(user_id);
+    res.status(200).json({ events: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getEventsByTitle = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const title = req.query.title as string;
+
+    if (!title || title.trim().length === 0) {
+      res.status(400).json({ msg: "Title query parameter is required" });
+      return;
+    }
+
+    const result = await selectEventsByTitle(title.trim());
     res.status(200).json({ events: result });
   } catch (err) {
     next(err);

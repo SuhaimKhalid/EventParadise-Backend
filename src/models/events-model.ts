@@ -188,3 +188,13 @@ export const selectEventsByCreator = async (
   );
   return result.rows;
 };
+
+export const selectEventsByTitle = async (title: string): Promise<Event[]> => {
+  const result = await db.query<Event>(
+    `SELECT event_id, title, description, start_date, end_date, location, type,
+            price::INT AS price, creator_id, image_url, created_at
+     FROM events WHERE title ILIKE $1`,
+    [`%${title}%`]
+  );
+  return result.rows;
+};
